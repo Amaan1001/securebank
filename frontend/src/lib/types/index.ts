@@ -24,6 +24,13 @@ export interface User {
   createdAt: string;
 }
 
+export interface CreateUserRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
 // ── Accounts ──────────────────────────────────────────────────────────────────
 export type AccountType   = 'CHECKING' | 'SAVINGS';
 export type AccountStatus = 'ACTIVE' | 'CLOSED' | 'FROZEN';
