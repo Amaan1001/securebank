@@ -1,92 +1,63 @@
-# SecureBank Phase 3 — Kubernetes Deployment
+# SecureBank — Cloud-Native Banking Platform
 
-## Prerequisites
-- Docker Desktop running
-- Minikube installed: `winget install Minikube`
-- kubectl installed: `winget install Kubernetes.kubectl`
+A full-stack banking application built with Java microservices, 
+Kubernetes, and a Next.js frontend.
 
-## One-Command Deploy
-From the root securebank/ folder:
+## Tech Stack
+
+**Backend:** Java 17, Spring Boot 3.2, Spring Cloud, Spring Security, JWT  
+**Database:** PostgreSQL, Flyway, HikariCP  
+**Infrastructure:** Docker, Kubernetes (Minikube), Prometheus, Grafana  
+**Frontend:** Next.js 14, TypeScript, Tailwind CSS, SWR  
+
+## Architecture
+
+| Service | Description | Port |
+|---|---|---|
+| account-service | Core banking REST API | 8081 |
+| api-gateway | Spring Cloud Gateway + rate limiting | 8080 |
+| eureka-server | Service discovery | 8761 |
+| frontend | Next.js BFF | 3000 |
+
+## Features
+
+- JWT authentication with BCrypt password hashing
+- Account management (checking + savings)
+- Deposits, withdrawals, transfers
+- Async audit logging via Spring @Async thread pool
+- Paginated transaction history
+- Prometheus metrics + Grafana dashboards
+- Full Kubernetes deployment with health probes
+
+## Run Locally
+
+```bash
+# Start infrastructure
+docker-compose up -d
+
+# Start services (separate terminals from root)
+gradlew.bat :eureka-server:bootRun
+gradlew.bat :account-service:bootRun
+gradlew.bat :api-gateway:bootRun
+
+# Start frontend
+cd frontend
+npm run dev
 ```
-deploy.bat
-```
 
-## Manual Step-by-Step
+Open http://localhost:3000
 
-### 1. Start Minikube
-```
+## Run on Kubernetes
+
+```bash
 minikube start --memory=4096 --cpus=4
+deploy.bat
+cd frontend && npm run dev
 ```
 
-### 2. Point Docker at Minikube
-```
-minikube -p minikube docker-env --shell cmd
-# Run each line it outputs
-```
+## API Docs
 
-### 3. Build jars
-```
-gradlew.bat :eureka-server:bootJar
-gradlew.bat :account-service:bootJar
-gradlew.bat :api-gateway:bootJar
-```
+http://localhost:8080/swagger-ui.html
 
-### 4. Build Docker images
-```
-docker build -t eureka-server:latest ./eureka-server
-docker build -t account-service:latest ./account-service
-docker build -t api-gateway:latest ./api-gateway
-```
-
-### 5. Deploy to Kubernetes
-```
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/config/
-kubectl apply -f k8s/postgres/
-kubectl apply -f k8s/redis/
-kubectl apply -f k8s/eureka-server/
-kubectl apply -f k8s/account-service/
-kubectl apply -f k8s/api-gateway/
-kubectl apply -f k8s/monitoring/
-```
-
-### 6. Get URLs
-```
-minikube service api-gateway-service -n securebank --url
-minikube service prometheus-service -n securebank --url
-minikube service grafana-service -n securebank --url
-```
-
-## Useful kubectl Commands
-```
-# See all pods
-kubectl get pods -n securebank
-
-# See logs for a pod
-kubectl logs -f deployment/account-service -n securebank
-
-# See all services
-kubectl get services -n securebank
-
-# Restart a deployment
-kubectl rollout restart deployment/account-service -n securebank
-
-# Scale account-service
-kubectl scale deployment/account-service --replicas=3 -n securebank
-```
-
-## Service Ports
-| Service         | Internal Port | Access Via                          |
-|-----------------|---------------|-------------------------------------|
-| API Gateway     | 8080          | minikube service api-gateway-service|
-| Account Service | 8081          | ClusterIP only (via gateway)        |
-| Eureka          | 8761          | ClusterIP only                      |
-| Prometheus      | 9090          | minikube service prometheus-service |
-| Grafana         | 3000          | minikube service grafana-service    |
-
-## Grafana Setup
-1. Open Grafana URL from minikube service command
-2. Login: admin / securebank123
-3. Prometheus datasource is auto-provisioned
-4. Import dashboard ID 4701 (JVM Micrometer) for JVM metrics
-5. Import dashboard ID 11378 (Spring Boot) for app metrics
+Requires JWT — register at `/auth/register` then click 
+Authorize in Swagger UI.
