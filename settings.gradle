@@ -1,0 +1,5 @@
+rootProject.name = 'securebank'
+
+include 'eureka-server'
+include 'api-gateway'
+include 'account-service'

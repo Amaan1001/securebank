@@ -1,0 +1,89 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      routes:
+        - id: auth-route
+          uri: lb://account-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - AddRequestHeader=X-Gateway-Source, securebank-gateway
+
+        - id: users-route
+          uri: lb://account-service
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_REPLENISHRATE:2}
+                redis-rate-limiter.burstCapacity: ${SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_BURSTCAPACITY:5}
+                key-resolver: "#{@ipKeyResolver}"
+            - AddRequestHeader=X-Gateway-Source, securebank-gateway
+
+        - id: accounts-route
+          uri: lb://account-service
+          predicates:
+            - Path=/api/v1/accounts/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_REPLENISHRATE:2}
+                redis-rate-limiter.burstCapacity: ${SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_BURSTCAPACITY:5}
+                key-resolver: "#{@ipKeyResolver}"
+            - AddRequestHeader=X-Gateway-Source, securebank-gateway
+
+        - id: swagger-route
+          uri: lb://account-service
+          predicates:
+            - Path=/swagger-ui.html,/swagger-ui/**,/api-docs/**,/v3/api-docs/**
+          filters:
+            - AddRequestHeader=X-Gateway-Source, securebank-gateway
+
+        - id: actuator-route
+          uri: lb://account-service
+          predicates:
+            - Path=/actuator/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,prometheus
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.securebank.gateway: DEBUG

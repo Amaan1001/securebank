@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Java
+*.class
+*.jar
+
+# Node
+**/node_modules/
+**/.next/
+frontend/out/
+
+# Environment — never commit these
+**/.env.local
+**/.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+thumbs.db
+
+# Logs
+*.log
+logs/

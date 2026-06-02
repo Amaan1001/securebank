@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: securebank
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_REPLENISHRATE
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_REPLENISHRATE
+            - name: SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_BURSTCAPACITY
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_BURSTCAPACITY
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: EUREKA_URL
+            - name: SPRING_DATA_REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: SPRING_DATA_REDIS_HOST
+            - name: SPRING_DATA_REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: SPRING_DATA_REDIS_PORT
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"

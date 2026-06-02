@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: securebank-config
+  namespace: securebank
+data:
+  # Database
+  DB_HOST: postgres-service
+  DB_PORT: "5432"
+  DB_NAME: securebank
+
+  # Redis
+  SPRING_DATA_REDIS_HOST: redis-service
+  SPRING_DATA_REDIS_PORT: "6379"
+  # Rate Limiting Overrides
+  SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_REPLENISHRATE: "2"
+  SPRING_CLOUD_GATEWAY_REDIS_RATE_LIMITER_BURSTCAPACITY: "5"
+
+  # Eureka
+  EUREKA_URL: http://eureka-service:8761/eureka/
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+  EUREKA_INSTANCE_HEALTH_CHECK_URL_PATH: "/actuator/health"
+
+  # Service ports
+  ACCOUNT_SERVICE_PORT: "8081"
+  GATEWAY_PORT: "8080"
+  EUREKA_PORT: "8761"
+
+  # JPA
+  JPA_SHOW_SQL: "false"
+  JPA_DDL_AUTO: "update"
+
+  # Logging
+  LOG_LEVEL_APP: INFO
+  LOG_LEVEL_WEB: WARN

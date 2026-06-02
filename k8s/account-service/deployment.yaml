@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-service
+  namespace: securebank
+spec:
+  replicas: 2                           # 2 instances — resume bullet: high availability
+  selector:
+    matchLabels:
+      app: account-service
+  template:
+    metadata:
+      labels:
+        app: account-service
+      annotations:
+        prometheus.io/scrape: "true"    # tells Prometheus to scrape this pod
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8081"
+    spec:
+      containers:
+        - name: account-service
+          image: account-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATA_REDIS_HOST
+              value: "redis-service" 
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: SPRING_BOOT_ADMIN_CLIENT_INSTANCE_SERVICE_BASE_URL
+              value: "http://$(hostname):8081"
+            - name: EUREKA_INSTANCE_HEALTH_CHECK_URL_PATH
+              value: "/actuator/health"
+            - name: SPRING_FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: securebank-secrets
+                  key: DB_USERNAME
+            - name: SPRING_FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: securebank-secrets
+                  key: DB_PASSWORD
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: DB_NAME
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - name: SPRING_FLYWAY_URL
+              value: "jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: securebank-secrets
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: securebank-secrets
+                  key: DB_PASSWORD
+            - name: EUREKA_INSTANCE_NON_SECURE_PORT
+              value: "8081"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: EUREKA_URL
+            - name: SPRING_JPA_SHOW_SQL
+              valueFrom:
+                configMapKeyRef:
+                  name: securebank-config
+                  key: JPA_SHOW_SQL
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
